@@ -1,16 +1,11 @@
 use mongodb::Client;
-use mongodb::bson::doc;
 
-use serde::Deserialize;
-
-
-use serde_json::{Value};
+use serde_json;
 
 use std::error::Error;
-use bson::Document;
+use bson::{Bson, doc, Document};
 
 use futures::stream::TryStreamExt;
-use futures::TryFutureExt;
 
 use tokio;
 
@@ -32,18 +27,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     while let Some(item) = cursor.try_next().await? {
 
         let uri = item.get("uri").unwrap().to_string();
-        println!("Uri: {}", uri);
+        // println!("Uri: {}", uri);
 
         let uri_trimmed = uri.trim_matches('"');
 
         let response = reqwest::get(uri_trimmed).await?;
 
-        let data = response.text().await?;
+        let response_string = response.text().await?;
 
-        let v: Value = serde_json::from_str(&data)?;
-        println!("{}",v);
+        let bson_data_objekt: Bson = serde_json::from_str(&response_string)?;
+
+        let _update_result = metadata_collection.update_one(
+            doc! {
+            "_id": &item.get("_id")
+            },
+            doc! {
+            "$set": { "data": &bson_data_objekt }
+            },
+            None,
+        ).await?;
+
+        //println!("Updated {} document", update_result.modified_count);
+        //println!("{}",v);
     }
 
-    // Needet for async await ? or maybe not ?
+    // Needed for async await ? or maybe not ?
     Ok(())
 }
