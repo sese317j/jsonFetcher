@@ -582,7 +582,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonFetcher"
+name = "json_fetcher"
 version = "0.1.0"
 dependencies = [
  "bson",
